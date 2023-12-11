@@ -1,5 +1,5 @@
 const file = Bun.file("input.txt");
-//const file = Bun.file("small-input.txt");
+// const file = Bun.file("small-input.txt");
 const input = await file.text();
 
 const lines = input.split("\n").filter(Boolean);
@@ -41,25 +41,26 @@ const sum = lines.reduce((pv, cv) => {
         )
     );
 
-  const isPossible =
-    rounds.filter((round) => {
-      if (round.red > redCubeCount) {
-        return false;
+  const minSet = rounds.reduce(
+    (pv, cv) => {
+      if (cv.red > pv.red) {
+        pv.red = cv.red;
       }
-      if (round.green > greenCubeCount) {
-        return false;
+      if (cv.green > pv.green) {
+        pv.green = cv.green;
       }
-      if (round.blue > blueCubeCount) {
-        return false;
+      if (cv.blue > pv.blue) {
+        pv.blue = cv.blue;
       }
 
-      return true;
-    }).length === rounds.length;
+      return pv;
+    },
+    { red: 0, green: 0, blue: 0 }
+  );
 
-  if (isPossible) {
-    return pv + gameId;
-  }
-  return pv;
+  const power = minSet.red * minSet.green * minSet.blue;
+
+  return pv + power;
 }, 0);
 
 console.log(sum);
