@@ -14,6 +14,9 @@ const table = lines.map((line) =>
     if (isNumber(char)) {
       return parseInt(char);
     }
+    if (char === "*") {
+      return "star";
+    }
 
     return "symbol";
   })
@@ -107,16 +110,104 @@ const checkTopBottomXLine = (numberRow: (typeof numbers)[number]) => {
   }, false);
 };
 
-const sum = numbers.reduce((sum, row) => {
-  const rowSum = row.numbers.reduce((sum, number) => {
-    if (checkTopBottomXLine({ row: row.row, numbers: [number] })) {
-      return sum + number.number;
+// const sum = numbers.reduce((sum, row) => {
+//   const rowSum = row.numbers.reduce((sum, number) => {
+//     if (checkTopBottomXLine({ row: row.row, numbers: [number] })) {
+//       return sum + number.number;
+//     }
+
+//     return sum;
+//   }, 0);
+
+//   return sum + rowSum;
+// }, 0);
+
+const stars = table.reduce<{ row: number; index: number }[]>(
+  (starTable, tableRow, rowIndex) => {
+    const row = tableRow.reduce((stars, char, colIndex) => {
+      if (char === "star") {
+        stars.push({
+          row: rowIndex,
+          index: colIndex,
+        });
+      }
+
+      return stars;
+    }, []);
+
+    return [...starTable, ...row];
+  },
+  []
+);
+
+const checkLineStar = (starIndex: number, rowToCheck: number) => {
+  const tableRow = table[rowToCheck];
+
+  if (tableRow === undefined) {
+    return [];
+  }
+
+  const numberIndexes = tableRow.reduce<(number | false)[]>(
+    (indexes, char, index) => {
+      if (
+        index >= getMinMax(starIndex - 1, tableRow.length) &&
+        index <= getMinMax(starIndex + 1, tableRow.length)
+      ) {
+        if (isNumber(char)) {
+          indexes.push(index);
+        } else {
+          indexes.push(false);
+        }
+      }
+
+      return indexes;
+    },
+    []
+  );
+
+  let indexes: number[] = [];
+
+  if (numberIndexes[0] !== false && numberIndexes[2] !== false) {
+    indexes = [numberIndexes[0], numberIndexes[2]];
+  } else {
+    const foundIndexes = numberIndexes.filter(Boolean) as number[];
+    if (foundIndexes.length) {
+      indexes = [foundIndexes[0]];
     }
+  }
 
-    return sum;
-  }, 0);
+  return indexes.reduce<number[]>((catchedNumbers, indexValue) => {
+    const number = numbers[rowToCheck].numbers.reduce<number[]>(
+      (catchedNumbers, number) => {
+        if (
+          indexValue >= getMinMax(number.start, tableRow.length) &&
+          indexValue <= getMinMax(number.end, tableRow.length)
+        ) {
+          catchedNumbers.push(number.number);
+        }
 
-  return sum + rowSum;
+        return catchedNumbers;
+      },
+      []
+    );
+
+    return [...catchedNumbers, ...number];
+  }, []);
+};
+
+const sum = stars.reduce((sum, star) => {
+  const topCheck = new Set(checkLineStar(star.index, star.row - 1));
+  const bottomCheck = new Set(checkLineStar(star.index, star.row + 1));
+  const xCheck = new Set(checkLineStar(star.index, star.row));
+
+  const adjacents = [...topCheck, ...bottomCheck, ...xCheck];
+
+  if (adjacents.length === 2) {
+    const ratio = adjacents[0] * adjacents[1];
+    return sum + ratio;
+  }
+
+  return sum;
 }, 0);
 
 console.log(sum);
